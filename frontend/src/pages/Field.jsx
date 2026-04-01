@@ -102,6 +102,70 @@ export default function FieldActivities() {
   const [loading, setLoading] = useState(true)
   const [error, setError]     = useState(null)
 
+  /* ── Transform backend response to frontend shape ────── */
+  const STAT_MAP = {
+    nios_enrolled_pct:   { label: 'NIOS Enrolled',           unit: '%', fmt: (v) => (v * 100).toFixed(1) },
+    out_of_school_pct:   { label: 'Out of School',           unit: '%', fmt: (v) => (v * 100).toFixed(1) },
+    formal_school_pct:   { label: 'Formal School',           unit: '%', fmt: (v) => (v * 100).toFixed(1) },
+    health_camps:        { label: 'Health Camps',             unit: '',  fmt: (v) => Math.round(v).toLocaleString() },
+    meals:               { label: 'Meals Served',             unit: '',  fmt: (v) => Math.round(v).toLocaleString() },
+    sanitary_pads:       { label: 'Sanitary Pads Distributed',unit: '',  fmt: (v) => Math.round(v).toLocaleString() },
+  }
+
+  const ACHIEVE_MAP = {
+    self_help_groups:    { label: 'Self Help Groups',  unit: '' },
+    students_placed:     { label: 'Students Placed',   unit: '' },
+    scholarships:        { label: 'Scholarships',      unit: '' },
+    pursuing_graduation: { label: 'Pursuing Graduation',unit: '' },
+    scored_60_10th:      { label: 'Scored 60%+ (10th)', unit: '' },
+    scored_60_12th:      { label: 'Scored 60%+ (12th)', unit: '' },
+  }
+
+  const CAREER_MAP = {
+    counselling:         { label: 'Career Counselling' },
+    career_courses:      { label: 'Career Courses' },
+    library:             { label: 'Library Usage' },
+    competitive_cleared: { label: 'Competitive Exams Cleared' },
+    sports_reps:         { label: 'Sports Representatives' },
+  }
+
+  function transformResponse(raw) {
+    // kpis
+    const kpis = Object.entries(raw.stats || {}).map(([k, v]) => {
+      const c = STAT_MAP[k] || { label: k, unit: '', fmt: (x) => x }
+      return { label: c.label, value: c.fmt(v), unit: c.unit }
+    })
+
+    // funnel — add percent relative to first stage
+    const rawFunnel = raw.inclusion_funnel || []
+    const maxFunnel = rawFunnel.length ? Math.max(...rawFunnel.map((f) => f.value), 1) : 1
+    const funnel = rawFunnel.map((f) => ({
+      stage: f.stage,
+      value: +(f.value * 100).toFixed(1),
+      percent: +((f.value / maxFunnel) * 100).toFixed(0),
+    }))
+
+    // achievements
+    const achievements = Object.entries(raw.achievements || {}).map(([k, v]) => {
+      const c = ACHIEVE_MAP[k] || { label: k, unit: '' }
+      return { label: c.label, value: Math.round(v).toLocaleString(), unit: c.unit }
+    })
+
+    // activities
+    const activities = (raw.activities_progress || []).map((a) => ({
+      label: a.activity,
+      value: +(a.value_pct * 100).toFixed(1),
+    }))
+
+    // careerTable
+    const careerTable = Object.entries(raw.career || {}).map(([k, v]) => {
+      const c = CAREER_MAP[k] || { label: k }
+      return { label: c.label, value: Math.round(v).toLocaleString() }
+    })
+
+    return { kpis, funnel, achievements, activities, careerTable }
+  }
+
   useEffect(() => {
     let cancelled = false
     setLoading(true)
@@ -109,7 +173,7 @@ export default function FieldActivities() {
 
     api
       .get('/field', { params: { zone, month } })
-      .then((res) => { if (!cancelled) setData(res.data) })
+      .then((res) => { if (!cancelled) setData(transformResponse(res.data)) })
       .catch((err) => { if (!cancelled) setError(err.response?.data?.message || err.message) })
       .finally(() => { if (!cancelled) setLoading(false) })
 

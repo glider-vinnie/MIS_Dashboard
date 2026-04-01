@@ -115,14 +115,40 @@ export default function Reports() {
     setLoading(true)
     setError(null)
 
+    function transformSummary(raw) {
+      // leaderboard — add missing fields with defaults, rename snake_case
+      const leaderboard = (raw.leaderboard || []).map((row) => ({
+        zone: row.zone,
+        performanceScore: row.performance_score ?? 0,
+        attendance: row.attendance != null ? +(row.attendance * 100).toFixed(1) : 0,
+        dropout: row.dropout != null ? +(row.dropout * 100).toFixed(1) : 0,
+        academic: row.academic != null ? +(row.academic * 100).toFixed(1) : 0,
+        expenditure: row.expenditure ?? null,
+      }))
+
+      // quarterData — build from per-zone quarter comparison if available
+      const quarterData = (raw.leaderboard || []).map((row) => ({
+        zone: row.zone,
+        q1_performanceScore: row.q1_performance_score ?? row.performance_score ?? 0,
+        q2_performanceScore: row.q2_performance_score ?? row.performance_score ?? 0,
+        q1_attendance: row.q1_attendance ?? 0,
+        q2_attendance: row.q2_attendance ?? 0,
+        q1_academic: row.q1_academic ?? 0,
+        q2_academic: row.q2_academic ?? 0,
+      }))
+
+      return { leaderboard, quarterData }
+    }
+
     Promise.all([
       api.get('/reports/summary', { params: { zone, month } }),
       api.get('/reports/insights', { params: { zone, month } }),
     ])
       .then(([summaryRes, insightsRes]) => {
         if (!cancelled) {
-          setData(summaryRes.data)
-          setInsights(insightsRes.data?.insights ?? [])
+          setData(transformSummary(summaryRes.data))
+          const rawInsights = insightsRes.data
+          setInsights(Array.isArray(rawInsights) ? rawInsights : (rawInsights?.insights ?? []))
         }
       })
       .catch((err) => {

@@ -66,6 +66,71 @@ export default function Training() {
   const [loading, setLoading] = useState(true)
   const [error, setError]     = useState(null)
 
+  /* ── Transform backend response to frontend shape ────── */
+  const KPI_MAP = {
+    student_count:  { label: 'Student Count',      unit: '',  fmt: (v) => Math.round(v).toLocaleString() },
+    avg_strength:   { label: 'Avg Strength',        unit: '',  fmt: (v) => v.toFixed(1) },
+    attendance:     { label: 'Attendance',           unit: '%', fmt: (v) => (v * 100).toFixed(1) },
+    dropout:        { label: 'Dropout Rate',         unit: '%', fmt: (v) => (v * 100).toFixed(1) },
+    academic_perf:  { label: 'Academic Performance', unit: '%', fmt: (v) => (v * 100).toFixed(1) },
+    values_perf:    { label: 'Values Performance',   unit: '%', fmt: (v) => (v * 100).toFixed(1) },
+  }
+
+  const VOL_MAP = {
+    count:           { label: 'Volunteer Count',        unit: '',  fmt: (v) => Math.round(v).toLocaleString() },
+    avg_attendance:  { label: 'Volunteer Attendance',    unit: '%', fmt: (v) => (v * 100).toFixed(1) },
+    community_vols:  { label: 'Community Volunteers',    unit: '',  fmt: (v) => Math.round(v).toLocaleString() },
+    community_visits:{ label: 'Community Visits',        unit: '',  fmt: (v) => Math.round(v).toLocaleString() },
+  }
+
+  function transformResponse(raw) {
+    const kpis = Object.entries(raw.kpis || {}).map(([k, v]) => {
+      const c = KPI_MAP[k] || { label: k, unit: '', fmt: (x) => x }
+      return { label: c.label, value: c.fmt(v), unit: c.unit }
+    })
+
+    // Pivot: backend gives per-zone rows, RadarZoneChart needs per-axis rows
+    const rawRadar = (raw.radar_data || [])
+    const radarZones = rawRadar.map((r) => r.zone)
+    const AXES = [
+      { key: 'attendance', label: 'Attendance' },
+      { key: 'academic', label: 'Academic' },
+      { key: 'values', label: 'Values' },
+      { key: 'vol_attendance', label: 'Vol Attendance' },
+      { key: 'syllabus', label: 'Syllabus' },
+      { key: 'test', label: 'Test' },
+    ]
+    const radarData = AXES.map(({ key, label }) => {
+      const row = { axis: label }
+      rawRadar.forEach((r) => { row[r.zone] = +(((r[key] || 0) * 100).toFixed(1)) })
+      return row
+    })
+
+    const monthlyTrend = (raw.student_trends || []).map((t) => ({
+      month: t.month,
+      studentCount: t.count,
+      avgStrength: t.strength,
+    }))
+
+    const dropoutTrend = raw.dropout_trends || []
+    const sampleTrend = dropoutTrend[0] || {}
+    const dropoutZones = Object.keys(sampleTrend).filter((k) => k !== 'month')
+
+    const volunteerKpis = Object.entries(raw.volunteer_metrics || {}).map(([k, v]) => {
+      const c = VOL_MAP[k] || { label: k, unit: '', fmt: (x) => x }
+      return { label: c.label, value: c.fmt(v), unit: c.unit }
+    })
+
+    const heatRaw = raw.heatmap || {}
+    const heatmapType = heatRaw.metric === 'academic_perf' ? 'Academic Performance' : (heatRaw.metric || 'Performance')
+    const heatmapData = Object.entries(heatRaw.data || {}).map(([z, months]) => ({
+      zone: z,
+      ...Object.fromEntries(Object.entries(months).map(([m, v]) => [m, +(v * 100).toFixed(1)])),
+    }))
+
+    return { kpis, radarData, radarZones, monthlyTrend, dropoutTrend, dropoutZones, volunteerKpis, heatmapData, heatmapType }
+  }
+
   useEffect(() => {
     let cancelled = false
     setLoading(true)
@@ -73,7 +138,7 @@ export default function Training() {
 
     api
       .get('/training', { params: { zone, month } })
-      .then((res) => { if (!cancelled) setData(res.data) })
+      .then((res) => { if (!cancelled) setData(transformResponse(res.data)) })
       .catch((err) => { if (!cancelled) setError(err.response?.data?.message || err.message) })
       .finally(() => { if (!cancelled) setLoading(false) })
 

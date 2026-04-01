@@ -80,9 +80,27 @@ export default function ExceptionTracker() {
     setLoading(true)
     setError(null)
 
+    function transformResponse(raw) {
+      const s = raw.summary || {}
+      const summary = {
+        totalRaised: s.total_raised,
+        totalResolved: s.total_resolved,
+        avgResolutionRate: s.avg_resolution_rate != null ? +(s.avg_resolution_rate * 100).toFixed(1) : 0,
+      }
+
+      const zones = (raw.by_zone || []).map((z) => ({
+        zone: z.zone,
+        exceptions_raised: z.raised,
+        exceptions_resolved: z.resolved,
+        resolution_rate: z.resolution_rate != null ? +(z.resolution_rate * 100).toFixed(1) : 0,
+      }))
+
+      return { summary, zones }
+    }
+
     api
-      .get('/exceptions', { params: { zone, month } })
-      .then((res) => { if (!cancelled) setData(res.data) })
+      .get('/financial/exceptions', { params: { zone, month } })
+      .then((res) => { if (!cancelled) setData(transformResponse(res.data)) })
       .catch((err) => { if (!cancelled) setError(err.response?.data?.message || err.message) })
       .finally(() => { if (!cancelled) setLoading(false) })
 

@@ -2,14 +2,11 @@
  * MonthFilter — Dark pill dropdown for month selection (Apr'25 – Dec'25).
  *
  * Props:
- *   value    — currently selected month string (e.g. "Apr 2025")
+ *   value    — currently selected month string (e.g. "Apr'25")
  *   onChange — callback(newMonthString)
  */
 
-const MONTHS = [
-  'Apr 2025', 'May 2025', 'Jun 2025', 'Jul 2025',
-  'Aug 2025', 'Sep 2025', 'Oct 2025', 'Nov 2025', 'Dec 2025',
-]
+import { MONTHS } from '../store/filterStore'
 
 export default function MonthFilter({ value, onChange }) {
   return (

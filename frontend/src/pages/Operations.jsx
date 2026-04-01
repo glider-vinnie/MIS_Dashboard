@@ -100,6 +100,55 @@ export default function Operations() {
   const [loading, setLoading] = useState(true)
   const [error, setError]     = useState(null)
 
+  /* ── Transform backend response to frontend shape ────── */
+  const STAT_LABELS = {
+    working_days:   { label: 'Working Days',          unit: 'days', fmt: (v) => v.toFixed(1) },
+    center_hours:   { label: 'Center Operating Time', unit: 'hrs',  fmt: (v) => v.toFixed(1) },
+    teacher_ratio:  { label: 'Student:Teacher Ratio', unit: '',     fmt: (v) => v.toFixed(1) },
+    center_visits:  { label: 'Center Visits',         unit: '',     fmt: (v) => Math.round(v).toLocaleString() },
+  }
+
+  const SHORT_MONTHS = ['apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
+  const MONTH_KEY_MAP = {}  // built dynamically from backend months
+
+  function transformResponse(raw) {
+    // kpis
+    const kpis = Object.entries(raw.stats || {}).map(([k, v]) => {
+      const c = STAT_LABELS[k] || { label: k, unit: '', fmt: (x) => x }
+      return { label: c.label, value: c.fmt(v), unit: c.unit }
+    })
+
+    // centerOperatingTime
+    const centerOperatingTime = (raw.center_hours_by_zone || []).map((z) => ({
+      zone: z.zone,
+      hours: z.hours,
+    }))
+
+    // activityCompletion - flatten monthly_values to short month keys
+    const activityCompletion = (raw.activity_completion || []).map((row) => {
+      const flat = { activity: row.activity, avg: row.avg != null ? +(row.avg * 100).toFixed(1) : null }
+      // Map backend month keys to short names
+      if (row.monthly_values) {
+        Object.entries(row.monthly_values).forEach(([monthKey, val]) => {
+          const lower = monthKey.toLowerCase()
+          const short = SHORT_MONTHS.find((s) => lower.startsWith(s))
+          if (short) flat[short] = val != null ? +(val * 100).toFixed(1) : null
+        })
+      }
+      return flat
+    })
+
+    // quarterlyImprovement
+    const quarterlyImprovement = (raw.quarterly_improvement || []).map((q) => ({
+      zone: q.zone,
+      q1: q.q1_improvement,
+      q2: q.q2_improvement,
+      q3: q.q3_improvement || 0,
+    }))
+
+    return { kpis, centerOperatingTime, visitDistribution: [], activityCompletion, quarterlyImprovement }
+  }
+
   useEffect(() => {
     let cancelled = false
     setLoading(true)
@@ -107,7 +156,7 @@ export default function Operations() {
 
     api
       .get('/operations', { params: { zone, month } })
-      .then((res) => { if (!cancelled) setData(res.data) })
+      .then((res) => { if (!cancelled) setData(transformResponse(res.data)) })
       .catch((err) => { if (!cancelled) setError(err.response?.data?.message || err.message) })
       .finally(() => { if (!cancelled) setLoading(false) })
 

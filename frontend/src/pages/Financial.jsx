@@ -92,9 +92,73 @@ export default function Financial() {
     setLoading(true)
     setError(null)
 
+    const SHORT = ['apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
+
+    function transformResponse(raw) {
+      // summary
+      const s = raw.summary || {}
+      const summary = {
+        totalExpenditure: s.total_expenditure,
+        highestZone: s.highest_zone,
+        highestAmount: null,
+        lowestZone: s.lowest_zone,
+        lowestAmount: null,
+        momChange: s.mom_change_pct,
+      }
+
+      // zoneExpenditure
+      const zoneExpenditure = (raw.by_zone || []).map((z) => ({
+        zone: z.zone,
+        amount: z.expenditure,
+      }))
+
+      // fill highestAmount / lowestAmount
+      const sorted = [...zoneExpenditure].sort((a, b) => b.amount - a.amount)
+      if (sorted.length) {
+        summary.highestAmount = sorted[0].amount
+        summary.lowestAmount = sorted[sorted.length - 1].amount
+      }
+
+      // monthlyTrend + trendZones
+      const monthlyTrend = raw.trends || []
+      const sampleTrend = monthlyTrend[0] || {}
+      const trendZones = Object.keys(sampleTrend).filter((k) => k !== 'month')
+
+      // scatterData + scatterZones
+      const scatterData = (raw.scatter || []).map((pt) => ({
+        zone: pt.zone,
+        month: pt.month,
+        expenditure: pt.expenditure,
+        performance: pt.performance_score,
+      }))
+      const scatterZones = [...new Set(scatterData.map((p) => p.zone))]
+
+      // expenditureTable – flatten monthly_values to {zone, apr, may, ..., q1, q2, total}
+      const expenditureTable = (raw.zone_table || []).map((row) => {
+        const flat = { zone: row.zone, total: row.total }
+        const mvArr = Object.entries(row.monthly_values || {})
+        let q1Sum = 0, q2Sum = 0
+        mvArr.forEach(([monthKey, val]) => {
+          const lower = monthKey.toLowerCase()
+          const short = SHORT.find((s) => lower.startsWith(s))
+          if (short) {
+            flat[short] = val
+            const idx = SHORT.indexOf(short)
+            if (idx < 3) q1Sum += (val || 0)
+            else if (idx < 6) q2Sum += (val || 0)
+          }
+        })
+        flat.q1 = Math.round(q1Sum)
+        flat.q2 = Math.round(q2Sum)
+        return flat
+      })
+
+      return { summary, zoneExpenditure, monthlyTrend, trendZones, scatterData, scatterZones, expenditureTable }
+    }
+
     api
       .get('/financial', { params: { zone, month } })
-      .then((res) => { if (!cancelled) setData(res.data) })
+      .then((res) => { if (!cancelled) setData(transformResponse(res.data)) })
       .catch((err) => { if (!cancelled) setError(err.response?.data?.message || err.message) })
       .finally(() => { if (!cancelled) setLoading(false) })
 

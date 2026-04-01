@@ -25,9 +25,17 @@ async def get_reports_summary(
     leaderboard = []
     for z in all_z:
         score = safe_avg([get_metric(z, m, "Performance Score") for m in months])
+        att = safe_avg([get_metric(z, m, "Average Student's Attendance (%)") for m in months])
+        dropout = safe_avg([get_metric(z, m, "Students Drop out (%)") for m in months])
+        academic = safe_avg([get_metric(z, m, "Average Students Performance test in Academics ( % )") for m in months])
+        exp = safe_sum([get_metric(z, m, "Monthly Expenditure (INR)") for m in months])
         leaderboard.append({
             "zone": z,
-            "performance_score": score
+            "performance_score": score,
+            "attendance": att,
+            "dropout": dropout,
+            "academic": academic,
+            "expenditure": exp
         })
     leaderboard.sort(key=lambda x: x["performance_score"], reverse=True)
     

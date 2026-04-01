@@ -15,8 +15,18 @@ security = HTTPBearer()
 def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
     """
     Dependency to get the current user from the JWT token in the Authorization header.
+    Supports a special 'demo-token' for hackathon demo mode.
     """
     token = credentials.credentials
+
+    # Demo mode bypass — return admin user without JWT verification
+    if token == "demo-token":
+        return {
+            "sub": "demo@ngo.org",
+            "role": "admin",
+            "zones": ["all"],
+        }
+
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         return payload

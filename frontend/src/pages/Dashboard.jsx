@@ -58,6 +58,41 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [error, setError]     = useState(null)
 
+  /* ── Transform backend response to frontend shape ────── */
+  const KPI_LABELS = {
+    total_students:       { label: 'Total Students',            unit: '',    fmt: (v) => Math.round(v).toLocaleString() },
+    avg_attendance:       { label: 'Avg Attendance %',          unit: '%',   fmt: (v) => (v * 100).toFixed(1) },
+    dropout_rate:         { label: 'Dropout Rate',              unit: '%',   fmt: (v) => (v * 100).toFixed(1) },
+    academic_perf:        { label: 'Avg Academic Performance',  unit: '%',   fmt: (v) => (v * 100).toFixed(1) },
+    monthly_expenditure:  { label: 'Monthly Expenditure (INR)', unit: '₹',   fmt: (v) => Math.round(v).toLocaleString() },
+    performance_score:    { label: 'Performance Score',         unit: '',    fmt: (v) => v.toFixed(1) },
+  }
+
+  function transformResponse(raw) {
+    // 1. kpis: object → array of { label, value, unit }
+    const kpis = Object.entries(raw.kpis || {}).map(([key, val]) => {
+      const cfg = KPI_LABELS[key] || { label: key, unit: '', fmt: (v) => v }
+      return { label: cfg.label, value: cfg.fmt(val), unit: cfg.unit }
+    })
+
+    // 2. zone_comparison → zoneComparison (snake→camel)
+    const zoneComparison = (raw.zone_comparison || []).map((z) => ({
+      zone: z.zone,
+      studentCount: z.student_count,
+      avgStrength: z.avg_strength,
+    }))
+
+    // 3. trends → trendData (rename academic_perf→academic)
+    const trendData = (raw.trends || []).map((t) => ({
+      month: t.month,
+      attendance: +(t.attendance * 100).toFixed(1),
+      dropout: +(t.dropout * 100).toFixed(1),
+      academic: +(t.academic_perf * 100).toFixed(1),
+    }))
+
+    return { kpis, zoneComparison, trendData }
+  }
+
   useEffect(() => {
     let cancelled = false
     setLoading(true)
@@ -66,7 +101,7 @@ export default function Dashboard() {
     api
       .get('/dashboard/overview', { params: { zone, month } })
       .then((res) => {
-        if (!cancelled) setData(res.data)
+        if (!cancelled) setData(transformResponse(res.data))
       })
       .catch((err) => {
         if (!cancelled) setError(err.response?.data?.message || err.message)
