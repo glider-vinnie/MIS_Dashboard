@@ -1,0 +1,7 @@
+export { default as Login } from './Login'
+export { default as Dashboard } from './Dashboard'
+export { default as Operations } from './Operations'
+export { default as Training } from './Training'
+export { default as Financial } from './Financial'
+export { default as Field } from './Field'
+export { default as Reports } from './Reports'
