@@ -34,7 +34,7 @@ def clean_value(v: Any, metric_name: str) -> Optional[float]:
         name_lower = str(metric_name).lower()
         
         # Percentage extraction enforcing standard 0-1 mapped structures (4 dec places limit)
-        if val_has_percent or "(%)" in name_lower or "( % )" in name_lower:
+        if val_has_percent or "(%" in name_lower or "( % )" in name_lower:
             if val > 1 or val_has_percent: 
                 return round(val / 100.0, 4)
             return val

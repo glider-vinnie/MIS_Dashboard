@@ -198,7 +198,7 @@ def generate_insights(engine) -> List[Dict]:
             "icon": "CheckCircle", 
             "title": "Cost Efficiency Leader", 
             "text": f"{most_eff[0]} has the lowest expenditure per student.", 
-            "metric": f"₹{round(most_eff[1], 2)}/stu", 
+            "metric": f"\u20b9{round(most_eff[1], 2)}/stu", 
             "trend": "up"
         })
 
