@@ -34,16 +34,19 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-# CORS setup: allow local development and production URLs from environment variables
-frontend_url = os.getenv("FRONTEND_URL", "http://localhost:5173")
+# CORS setup: allow local development and multiple production URLs from environment variables
+frontend_url_env = os.getenv("FRONTEND_URL", "http://localhost:5173")
+origins = [
+    "http://localhost:5173",
+    "http://localhost:3000",
+]
+if frontend_url_env:
+    # Allow multiple comma-separated URLs
+    origins.extend([url.strip() for url in frontend_url_env.split(",") if url.strip()])
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://localhost:3000",
-        frontend_url,
-    ],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
