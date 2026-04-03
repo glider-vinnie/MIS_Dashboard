@@ -7,4 +7,3 @@ passlib
 python-dotenv
 firebase-admin
 openpyxl
-gunicorn
