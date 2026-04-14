@@ -157,7 +157,7 @@ export default function Financial() {
     }
 
     api
-      .get('/financial', { params: { zone, month } })
+      .get('/financial/', { params: { zone, month } })
       .then((res) => { if (!cancelled) setData(transformResponse(res.data)) })
       .catch((err) => { if (!cancelled) setError(err.response?.data?.message || err.message) })
       .finally(() => { if (!cancelled) setLoading(false) })

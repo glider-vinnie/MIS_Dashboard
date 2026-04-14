@@ -172,7 +172,7 @@ export default function FieldActivities() {
     setError(null)
 
     api
-      .get('/field', { params: { zone, month } })
+      .get('/field/', { params: { zone, month } })
       .then((res) => { if (!cancelled) setData(transformResponse(res.data)) })
       .catch((err) => { if (!cancelled) setError(err.response?.data?.message || err.message) })
       .finally(() => { if (!cancelled) setLoading(false) })

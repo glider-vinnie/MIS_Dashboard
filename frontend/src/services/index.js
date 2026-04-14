@@ -12,7 +12,7 @@ export const dashboardService = {
 }
 
 export const operationsService = {
-  getAll: () => api.get('/operations'),
+  getAll: () => api.get('/operations/'),
   getById: (id) => api.get(`/operations/${id}`),
   create: (data) => api.post('/operations', data),
   update: (id, data) => api.put(`/operations/${id}`, data),
@@ -20,7 +20,7 @@ export const operationsService = {
 }
 
 export const trainingService = {
-  getAll: () => api.get('/training'),
+  getAll: () => api.get('/training/'),
   getById: (id) => api.get(`/training/${id}`),
   create: (data) => api.post('/training', data),
   update: (id, data) => api.put(`/training/${id}`, data),
@@ -28,21 +28,21 @@ export const trainingService = {
 }
 
 export const financialService = {
-  getAll: () => api.get('/financial'),
+  getAll: () => api.get('/financial/'),
   getById: (id) => api.get(`/financial/${id}`),
   create: (data) => api.post('/financial', data),
   update: (id, data) => api.put(`/financial/${id}`, data),
 }
 
 export const fieldService = {
-  getAll: () => api.get('/field'),
+  getAll: () => api.get('/field/'),
   getById: (id) => api.get(`/field/${id}`),
   create: (data) => api.post('/field', data),
   update: (id, data) => api.put(`/field/${id}`, data),
 }
 
 export const reportsService = {
-  getAll: () => api.get('/reports'),
+  getAll: () => api.get('/reports/'),
   generate: (params) => api.post('/reports/generate', params),
   download: (id) => api.get(`/reports/${id}/download`, { responseType: 'blob' }),
 }
