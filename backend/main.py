@@ -32,7 +32,7 @@ async def lifespan(app: FastAPI):
         print(f"Error loading CSV: {e}")
     yield
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(lifespan=lifespan, redirect_slashes=False)
 
 # CORS setup: allow local development and multiple production URLs from environment variables
 frontend_url_env = os.getenv("FRONTEND_URL", "http://localhost:5173")

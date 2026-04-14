@@ -14,4 +14,4 @@ services:
       - key: JWT_SECRET
         generateValue: true
       - key: FRONTEND_URL
-        value: "https://frontend-cufrthi7r-vinnies-projects-3b4c43c2.vercel.app,https://frontend-liart-theta-skl27urjf6.vercel.app,https://frontend-rcwtt2sde-vinnies-projects-3b4c43c2.vercel.app"
+        value: "https://frontend-liart-theta-skl27urjf6.vercel.app"
