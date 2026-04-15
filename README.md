@@ -13,7 +13,7 @@ Before running the project locally, ensure you have the following installed:
 
 ---
 
-## 🚀 Quick Start Guide
+## 🚀🚀 Quick Start Guide
 
 ### 1. Backend Setup (FastAPI)
 
